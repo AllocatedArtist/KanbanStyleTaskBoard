@@ -16,7 +16,7 @@ export default function RootLayout({
       lang="en"
       className="h-full antialiased"
     >
-      <body className="min-h-full flex flex-col" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>{children}</body>
+      <body className="min-h-full flex flex-col overflow-hidden" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>{children}</body>
     </html>
   );
 }

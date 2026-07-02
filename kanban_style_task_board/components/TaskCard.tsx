@@ -105,24 +105,24 @@ export default function TaskCard({ task, onEdit, onDelete, isDragging: isDraggin
     <Draggable id={task.id} status={task.status} isDragging={isDraggingProp}>
       {(isDragging) => (
         <div
-          className={`group relative flex flex-col gap-2 rounded-lg border border-[#282740] bg-[#282740] p-2.5 shadow-sm transition-all ${isDragging ? '' : 'hover:border-[#AD9BBF] hover:shadow-md'} cursor-pointer`}
+          className={`group relative flex flex-col gap-1.5 rounded-lg border border-[#282740] bg-[#282740] p-2 shadow-sm transition-all ${isDragging ? '' : 'hover:border-[#AD9BBF] hover:shadow-md'} cursor-pointer`}
         >
           {/* Action buttons — top right */}
           {!isDragging && (
-            <div className="absolute top-1.5 right-1.5 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="absolute top-1 right-1 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
               <button
                 onClick={(e) => { e.stopPropagation(); onEdit(task); }}
-                className="p-1 rounded hover:bg-[#555673]/40 text-[#A3A4CC] hover:text-white transition-colors"
+                className="p-0.5 rounded hover:bg-[#555673]/40 text-[#A3A4CC] hover:text-white transition-colors"
               >
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
                 </svg>
               </button>
               <button
                 onClick={(e) => { e.stopPropagation(); onDelete(task); }}
-                className="p-1 rounded hover:bg-[#A6445E]/40 text-[#A3A4CC] hover:text-[#F25C5C] transition-colors"
+                className="p-0.5 rounded hover:bg-[#A6445E]/40 text-[#A3A4CC] hover:text-[#F25C5C] transition-colors"
               >
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                 </svg>
               </button>
@@ -130,15 +130,15 @@ export default function TaskCard({ task, onEdit, onDelete, isDragging: isDraggin
           )}
 
           {/* Title */}
-          <h3 className={`text-xs font-medium text-[#AD9BBF] ${isDragging ? '' : 'group-hover:text-white'} transition-colors line-clamp-2`}>
+          <h3 className={`text-[11px] font-medium text-[#AD9BBF] ${isDragging ? '' : 'group-hover:text-white'} transition-colors line-clamp-2`}>
             {task.title}
           </h3>
 
           {/* Footer Badges */}
-          <div className="flex items-center gap-1.5 flex-wrap">
+          <div className="flex items-center gap-1 flex-wrap">
             {/* Priority */}
             <span
-              className={`px-1.5 py-0.5 rounded-full text-[10px] ${priorityColors[task.priority]}`}
+              className={`px-1.5 py-0.5 rounded-full text-[9px] ${priorityColors[task.priority]}`}
               style={{ fontFamily: 'var(--font-bold)' }}
             >
               {task.priority}
@@ -152,7 +152,7 @@ export default function TaskCard({ task, onEdit, onDelete, isDragging: isDraggin
                   onClick={(e) => e.stopPropagation()}
                   onMouseEnter={() => { if (!isDragging) setShowMoreLabels(true) }}
                   onMouseLeave={() => setShowMoreLabels(false)}
-                  className="px-1.5 py-0.5 rounded-full text-[10px] text-[#AD9BBF] bg-[#555673]/40 hover:bg-[#555673]/60 transition-colors"
+                  className="px-1.5 py-0.5 rounded-full text-[9px] text-[#AD9BBF] bg-[#555673]/40 hover:bg-[#555673]/60 transition-colors"
                 >
                   +{overflowCount}
                 </button>
@@ -160,13 +160,13 @@ export default function TaskCard({ task, onEdit, onDelete, isDragging: isDraggin
             )}
             {showMoreLabels && !isDragging && createPortal(
               <div
-                className="fixed z-[9999] max-h-32 bg-[#282740] border border-[#555673] rounded-lg shadow-xl p-2 grid grid-cols-2 gap-1.5"
+                className="fixed z-[9999] max-h-32 bg-[#282740] border border-[#555673] rounded-lg shadow-xl p-2 grid grid-cols-2 gap-1"
                 style={{ top: tooltipPos.top, left: tooltipPos.left, transform: 'translateY(-100%)', overflowY: 'auto' }}
               >
                 {taskLabels.slice(3).map((label) => (
                   <span
                     key={label.id}
-                    className="w-fit px-1.5 py-0.5 rounded-full text-[10px] flex items-center justify-center"
+                    className="w-fit px-1.5 py-0.5 rounded-full text-[9px] flex items-center justify-center"
                     style={{ backgroundColor: label.color, color: '#ffffff' }}
                   >
                     {label.name}
@@ -178,7 +178,7 @@ export default function TaskCard({ task, onEdit, onDelete, isDragging: isDraggin
 
             {/* Due Date */}
             {formattedDate && (
-              <span className="text-[10px] text-[#A3A4CC] flex items-center gap-1">
+              <span className="text-[9px] text-[#A3A4CC] flex items-center gap-1">
                 {dueDateBadgeState ? (
                   <span
                     className={`px-1.5 py-0.5 rounded-full ${dueDateBadgeStyles[dueDateBadgeState]}`}

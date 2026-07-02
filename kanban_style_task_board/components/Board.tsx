@@ -250,13 +250,13 @@ export default function Board(prop: BoardProps) {
   }
 
   return (
-    <div className="min-h-screen bg-[#282740] p-4">
+    <div className="h-full bg-[#282740] p-4 overflow-hidden">
       <DndContext
         onDragStart={onDragStart}
         onDragEnd={onDragEnd}
         sensors={sensors}
       >
-        <div className="flex gap-4 h-[calc(100vh-2rem)]">
+        <div className="flex gap-4 h-full min-h-0">
           {Object.keys(columns).map((status) => (
             <div key={status as Status} className="flex-1 min-w-0">
               <Column

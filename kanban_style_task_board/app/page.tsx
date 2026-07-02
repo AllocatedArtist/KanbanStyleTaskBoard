@@ -85,72 +85,78 @@ export default function Page() {
   }, []);
 
   return (
-    <div>
+    <div className="h-screen overflow-hidden">
       <LabelProvider userId={userId}>
-        <FilterBar
-          allTasks={searchedTasks}
-          onSearch={(queries) => {
-            if (queries.length == 0) {
-              setSearchedTasks(allTasks);
-              setFilteredTasks(allTasks);
-              return;
-            }
+        <div className="flex h-full flex-col overflow-hidden">
+          <FilterBar
+            allTasks={searchedTasks}
+            onSearch={(queries) => {
+              if (queries.length == 0) {
+                setSearchedTasks(allTasks);
+                setFilteredTasks(allTasks);
+                return;
+              }
 
-            let filteredTasks = allTasks
-              .filter(task =>
-                queries.some(
-                  query => task.title.toLowerCase().includes(query.toLowerCase())
-                )
-              );
+              let filteredTasks = allTasks
+                .filter(task =>
+                  queries.some(
+                    query => task.title.toLowerCase().includes(query.toLowerCase())
+                  )
+                );
 
-            setSearchedTasks(filteredTasks);
-            setFilteredTasks(filteredTasks);
-          }}
-          onToggleLabel={tasks => {
-            setFilteredTasks([...tasks]);
-          }}
-        />
-        <Board
-          tasks={filteredTasks}
-          userId={userId}
-          addTask={(task: Task) => {
-            setAllTasks(prev => [...prev, task]);
-          }}
-          updateTask={(task: Task) => {
-            const update = (prev: Task[]) => {
-              let allTaskCopy = [...prev];
-              let taskIndex = allTaskCopy.findIndex(t => t.id == task.id);
-              if (taskIndex == -1) return allTaskCopy;
-              allTaskCopy[taskIndex] = task;
-              return allTaskCopy;
-            }
-            setAllTasks(prev => update(prev));
-            setSearchedTasks(prev => update(prev));
-            setFilteredTasks(prev => update(prev));
-          }}
-          removeTask={(taskId: string) => {
-            setAllTasks(prev => prev.filter(task => task.id !== taskId));
-            setSearchedTasks(prev => prev.filter(task => task.id !== taskId));
-            setFilteredTasks(prev => prev.filter(task => task.id !== taskId));
-          }}
-          computeDropPosition={(status, overId, dragId) => {
-            const others = allTasks
-              .filter(t => t.id !== dragId && t.status == status)
-              .sort((a, b) => a.position - b.position)
+              setSearchedTasks(filteredTasks);
+              setFilteredTasks(filteredTasks);
+            }}
+            onToggleLabel={tasks => {
+              setFilteredTasks([...tasks]);
+            }}
+          />
+          <div className="flex-1 min-h-0 overflow-hidden">
+            <Board
+              tasks={filteredTasks}
+              userId={userId}
+              addTask={(task: Task) => {
+                setAllTasks(prev => [...prev, task]);
+                setSearchedTasks(prev => [...prev, task]);
+                setFilteredTasks(prev => [...prev, task]);
+              }}
+              updateTask={(task: Task) => {
+                const update = (prev: Task[]) => {
+                  let allTaskCopy = [...prev];
+                  let taskIndex = allTaskCopy.findIndex(t => t.id == task.id);
+                  if (taskIndex == -1) return allTaskCopy;
+                  allTaskCopy[taskIndex] = task;
+                  return allTaskCopy;
+                }
+                setAllTasks(prev => update(prev));
+                setSearchedTasks(prev => update(prev));
+                setFilteredTasks(prev => update(prev));
+              }}
+              removeTask={(taskId: string) => {
+                setAllTasks(prev => prev.filter(task => task.id !== taskId));
+                setSearchedTasks(prev => prev.filter(task => task.id !== taskId));
+                setFilteredTasks(prev => prev.filter(task => task.id !== taskId));
+              }}
+              computeDropPosition={(status, overId, dragId) => {
+                const others = allTasks
+                  .filter(t => t.id !== dragId && t.status == status)
+                  .sort((a, b) => a.position - b.position)
 
-            const lowerIndex = overId
-              ? others.findIndex(t => t.id === overId)
-              : -1
+                const lowerIndex = overId
+                  ? others.findIndex(t => t.id === overId)
+                  : -1
 
-            const prev = lowerIndex >= 0 ? others[lowerIndex] : null
-            const next = lowerIndex >= 0 ? others[lowerIndex + 1] : others[0]   // true next in full order — may be hidden
+                const prev = lowerIndex >= 0 ? others[lowerIndex] : null
+                const next = lowerIndex >= 0 ? others[lowerIndex + 1] : others[0]   // true next in full order — may be hidden
 
-            if (!prev && !next) return 1000
-            if (!prev) return next.position / 2
-            if (!next) return prev.position + 1000
-            return (prev.position + next.position) / 2
-          }}
-        />
+                if (!prev && !next) return 1000
+                if (!prev) return next.position / 2
+                if (!next) return prev.position + 1000
+                return (prev.position + next.position) / 2
+              }}
+            />
+          </div>
+        </div>
       </LabelProvider >
     </div>
   );

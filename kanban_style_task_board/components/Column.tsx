@@ -27,9 +27,9 @@ export default function Column({ status, tasks, onAddTask, onEdit, onDelete }: C
   let sortedTasks = tasks.sort((a, b) => a.position - b.position);
   return (
     <Droppable id={status}>
-      <div className="flex flex-col h-full bg-[#1a1a2e] rounded-lg border border-[#282740] overflow-hidden">
+      <div className="flex flex-col h-full min-h-0 bg-[#1a1a2e] rounded-lg border border-[#282740] overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between px-3 py-2 border-b border-[#282740]">
+        <div className="flex items-center justify-between px-3 py-1.5 border-b border-[#282740]">
           <div className="flex items-center gap-2">
             <h2 className={"text-xs font-medium text-[#AD9BBF]"}>{status}</h2>
             <span className="text-[10px] text-[#A3A4CC] bg-[#282740] px-1.5 py-0.5 rounded-full">
@@ -48,7 +48,7 @@ export default function Column({ status, tasks, onAddTask, onEdit, onDelete }: C
 
         {/* Task List */}
         <SortableContext items={sortedTasks.map(task => task.id)} strategy={verticalListSortingStrategy}>
-          <div className="flex-1 overflow-y-auto p-2 space-y-2">
+          <div className="flex-1 min-h-0 overflow-y-auto p-1.5 space-y-1.5">
             {sortedTasks.map((task) => (
               <TaskCard
                 key={task.id}
