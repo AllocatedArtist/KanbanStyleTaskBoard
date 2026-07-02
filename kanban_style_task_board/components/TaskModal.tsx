@@ -72,7 +72,7 @@ export default function TaskModal({ isOpen, mode, onCancel, onConfirm, editingTa
 
     pendingLabels.forEach(label => {
       if (label.userId == "") {
-        labelContext.createLabel(label.name, label.color, newTaskId);
+        labelContext.createLabel(label.id, label.name, label.color);
       } else {
         labelContext.updateLabel(label.id, label.name, label.color);
       }
