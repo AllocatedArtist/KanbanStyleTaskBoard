@@ -24,6 +24,7 @@ function Droppable(props: { id: string, children: React.ReactNode }) {
 }
 
 export default function Column({ status, tasks, onAddTask, onEdit, onDelete }: ColumnProps) {
+  let sortedTasks = tasks.sort((a, b) => a.position - b.position);
   return (
     <Droppable id={status}>
       <div className="flex flex-col h-full bg-[#1a1a2e] rounded-lg border border-[#282740] overflow-hidden">
@@ -46,9 +47,9 @@ export default function Column({ status, tasks, onAddTask, onEdit, onDelete }: C
         </div>
 
         {/* Task List */}
-        <SortableContext items={tasks.map(task => task.id)} strategy={verticalListSortingStrategy}>
+        <SortableContext items={sortedTasks.map(task => task.id)} strategy={verticalListSortingStrategy}>
           <div className="flex-1 overflow-y-auto p-2 space-y-2">
-            {tasks.map((task) => (
+            {sortedTasks.map((task) => (
               <TaskCard
                 key={task.id}
                 task={task}
