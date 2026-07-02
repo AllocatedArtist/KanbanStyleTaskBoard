@@ -1,6 +1,8 @@
 import { useSortable } from "@dnd-kit/sortable"
 
-import { Task, Status } from "@/lib/types"
+import { useState, useRef, useEffect } from 'react'
+import { createPortal } from 'react-dom'
+import { Task, Status, DueDateBadgeState, getDueDateBadgeState } from "@/lib/types"
 import { useLabels } from "@/lib/LabelContext"
 
 interface TaskProps {
@@ -15,6 +17,18 @@ const priorityColors = {
   Normal: "bg-[#55736A]/50 text-[#D5E2DE] border border-[#55736A]/50",
   High: "bg-[#F25C5C]/20 text-[#F25C5C] border border-[#F25C5C]/50",
 };
+
+const dueDateBadgeStyles: Record<DueDateBadgeState, string> = {
+  warning: 'bg-[#F5B96B]/15 text-[#F5B96B] border border-[#F5B96B]/35',
+  today: 'bg-[#F25C5C]/15 text-[#F25C5C] border border-[#F25C5C]/35',
+  overdue: 'bg-[#A6445E]/15 text-[#A6445E] border border-[#A6445E]/35',
+}
+
+const dueDateBadgeLabels: Record<DueDateBadgeState, string> = {
+  warning: '1 day left',
+  today: 'Due today',
+  overdue: 'Overdue',
+}
 
 interface DraggableProps {
   status: Status
@@ -53,8 +67,39 @@ export default function TaskCard({ task, onEdit, onDelete, isDragging: isDraggin
       day: "numeric",
     })
     : null;
+  const dueDate = task.dueDate ? new Date(task.dueDate) : null
+  const dueDateBadgeState = dueDate && !Number.isNaN(dueDate.getTime())
+    ? getDueDateBadgeState(dueDate)
+    : null;
 
   const labelContext = useLabels();
+  const [showMoreLabels, setShowMoreLabels] = useState(false);
+  const overflowRef = useRef<HTMLDivElement>(null);
+  const [tooltipPos, setTooltipPos] = useState({ top: 0, left: 0 });
+
+  useEffect(() => {
+    if (showMoreLabels && overflowRef.current) {
+      const rect = overflowRef.current.getBoundingClientRect()
+      setTooltipPos({ top: rect.top - 4, left: rect.left })
+    }
+  }, [showMoreLabels]);
+
+  const taskLabels = labelContext.labelsForTask(task.id)
+  const visibleLabels = taskLabels.slice(0, 3)
+  const overflowCount = taskLabels.length - 3
+
+  const truncateName = (name: string, max = 12) =>
+    name.length > max ? name.slice(0, max) + '...' : name
+
+  const labelChip = (label: { id: string; name: string; color: string }) => (
+    <span
+      key={label.id}
+      className="px-1.5 py-0.5 rounded-full text-[10px] text-white truncate max-w-[100px] flex items-center justify-center"
+      style={{ backgroundColor: label.color }}
+    >
+      {truncateName(label.name)}
+    </span>
+  )
 
   return (
     <Draggable id={task.id} status={task.status} isDragging={isDraggingProp}>
@@ -99,9 +144,49 @@ export default function TaskCard({ task, onEdit, onDelete, isDragging: isDraggin
               {task.priority}
             </span>
 
+            {/* Labels */}
+            {visibleLabels.map((label) => labelChip(label))}
+            {overflowCount > 0 && (
+              <div className="relative" ref={overflowRef}>
+                <button
+                  onClick={(e) => e.stopPropagation()}
+                  onMouseEnter={() => { if (!isDragging) setShowMoreLabels(true) }}
+                  onMouseLeave={() => setShowMoreLabels(false)}
+                  className="px-1.5 py-0.5 rounded-full text-[10px] text-[#AD9BBF] bg-[#555673]/40 hover:bg-[#555673]/60 transition-colors"
+                >
+                  +{overflowCount}
+                </button>
+              </div>
+            )}
+            {showMoreLabels && !isDragging && createPortal(
+              <div
+                className="fixed z-[9999] max-h-32 bg-[#282740] border border-[#555673] rounded-lg shadow-xl p-2 grid grid-cols-2 gap-1.5"
+                style={{ top: tooltipPos.top, left: tooltipPos.left, transform: 'translateY(-100%)', overflowY: 'auto' }}
+              >
+                {taskLabels.slice(3).map((label) => (
+                  <span
+                    key={label.id}
+                    className="w-fit px-1.5 py-0.5 rounded-full text-[10px] flex items-center justify-center"
+                    style={{ backgroundColor: label.color, color: '#ffffff' }}
+                  >
+                    {label.name}
+                  </span>
+                ))}
+              </div>,
+              document.body
+            )}
+
             {/* Due Date */}
             {formattedDate && (
-              <span className="text-[10px] text-[#A3A4CC] flex items-center gap-0.5">
+              <span className="text-[10px] text-[#A3A4CC] flex items-center gap-1">
+                {dueDateBadgeState ? (
+                  <span
+                    className={`px-1.5 py-0.5 rounded-full ${dueDateBadgeStyles[dueDateBadgeState]}`}
+                    style={{ fontFamily: 'var(--font-bold)' }}
+                  >
+                    {dueDateBadgeLabels[dueDateBadgeState]}
+                  </span>
+                ) : null}
                 <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
