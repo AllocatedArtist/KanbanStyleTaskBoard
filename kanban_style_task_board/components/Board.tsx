@@ -1,5 +1,15 @@
-import { useState } from 'react'
-import { DndContext, DragEndEvent, PointerSensor, useSensors, useSensor, DragStartEvent, DragOverlay } from '@dnd-kit/core';
+import { useState, useEffect } from 'react'
+import {
+  DndContext,
+  DragEndEvent,
+  PointerSensor,
+  useSensors,
+  useSensor,
+  DragStartEvent,
+  DragOverlay,
+  Active,
+  Over
+} from '@dnd-kit/core';
 import { arrayMove } from '@dnd-kit/sortable'
 
 
@@ -11,7 +21,10 @@ import { Task, Status, Priority } from '@/lib/types'
 interface BoardProps {
   tasks: Task[]
   userId: string
-  onTaskUpdate: (task: Task) => void
+  addTask: (task: Task) => void
+  updateTask: (task: Task) => void
+  removeTask: (taskId: string) => void
+  computeDropPosition: (status: Status, overId: string | null, dragId: string) => number
 }
 
 
@@ -26,26 +39,75 @@ export default function Board(prop: BoardProps) {
   const [currentStatus, setCurrentStatus] = useState<Status | null>(null)
 
   const [columns, setColumns] = useState<Record<Status, Task[]>>({
-    "To Do": prop.tasks.filter(task => task.status == "To Do"),
-    "In Progress": prop.tasks.filter(task => task.status == "In Progress"),
-    "In Review": prop.tasks.filter(task => task.status == "In Review"),
-    "Done": prop.tasks.filter(task => task.status == "Done")
+    "To Do": [],
+    "In Progress": [],
+    "In Review": [],
+    "Done": []
   });
+
+  useEffect(() => {
+    setColumns({
+      "To Do": prop.tasks.filter(task => task.status == "To Do"),
+      "In Progress": prop.tasks.filter(task => task.status == "In Progress"),
+      "In Review": prop.tasks.filter(task => task.status == "In Review"),
+      "Done": prop.tasks.filter(task => task.status == "Done")
+    });
+  }, [prop.tasks]);
+
+  // Update global task list when a task is moved
+  useEffect(() => {
+    if (!selectedTaskId) return;
+    let taskId = selectedTaskId[0];
+    if (taskId) {
+      let column = findColumn(selectedTaskId[0]);
+      let task = columns[column].find(task => task.id == taskId);
+      if (task) editTask(task);
+    }
+    setSelectedTaskId(null);
+  }, [columns]);
+
+  const findColumn = (taskId: string) => {
+    return Object
+      .keys(columns)
+      .find(status => columns[status as Status].some(task => task.id == taskId)) as Status;
+  };
 
   const onDragStart = ({ active }: DragStartEvent) => {
     setSelectedTaskId([active.id as string, active.data.current?.status]);
   }
 
-  const onDragEnd = ({ over }: DragEndEvent) => {
+  function getLowerNeighborId(
+    overId: string,
+    edge: 'top' | 'bottom',
+    visibleTasks: Task[]   // the filtered/visible list currently rendered in this column
+  ): string | null {
+    const overIndex = visibleTasks.findIndex(t => t.id === overId)
+
+    if (edge === 'bottom') {
+      return overId   // inserting after `over` → `over` IS the lower neighbor
+    }
+
+    // edge === 'top' → inserting before `over` → the lower neighbor is whatever's
+    // visually above `over`, or null if `over` is the first card in view
+    return overIndex > 0 ? visibleTasks[overIndex - 1].id : null
+  }
+
+
+  function getDropEdge(active: Active, over: Over): 'top' | 'bottom' {
+    const overRect = over.rect
+    const activeRect = active.rect.current.translated
+    if (!overRect || !activeRect) return 'bottom'
+
+    const overCenterY = overRect.top + overRect.height / 2
+    const activeCenterY = activeRect.top + activeRect.height / 2
+
+    return activeCenterY < overCenterY ? 'top' : 'bottom'
+  }
+
+  const onDragEnd = ({ active, over }: DragEndEvent) => {
     if (!(over && over.id)) {
       return;
     }
-
-    const findColumn = (taskId: string) => {
-      return Object
-        .keys(columns)
-        .find(status => columns[status as Status].some(task => task.id == taskId)) as Status;
-    };
 
     let newColumn = columns[over.id as Status] ? over.id as Status : findColumn(over.id as string);
     let taskId = selectedTaskId?.[0];
@@ -55,24 +117,18 @@ export default function Board(prop: BoardProps) {
       return;
     }
 
-    const computeNewPosition = (tasks: Task[], newIndex: number) => {
-      const prev = tasks[newIndex - 1];
-      const next = tasks[newIndex + 1];
-      if (prev == null && next == null) return 1000.0;
-      if (prev == null) return next.position / 2;
-      if (next == null) return prev.position + 1000.0;
-      return (prev.position + next.position) / 2;
-    };
-
     // Move task from previous column to new column
     setColumns(prev => {
+      const edge = getDropEdge(active, over)
+
       // Move task within the same column
       if (prevColumn == newColumn) {
         const tasks = prev[prevColumn];
         const prevIndex = activeTaskIndex;
         const nextIndex = tasks.findIndex(task => task.id == over.id);
         if (nextIndex == -1) return prev;
-        tasks[prevIndex].position = computeNewPosition(tasks, nextIndex);
+        const lowerNeighborId = getLowerNeighborId(over.id as string, edge, tasks)
+        tasks[prevIndex].position = prop.computeDropPosition(prevColumn, lowerNeighborId, tasks[prevIndex].id);
         return { ...prev, [prevColumn]: arrayMove(tasks, prevIndex, nextIndex) };
       }
 
@@ -83,20 +139,21 @@ export default function Board(prop: BoardProps) {
       const destColumn = [...prev[newColumn]];
       const nextIndex = destColumn.findIndex(task => task.id == over.id);
       const insertIndex = nextIndex == -1 ? destColumn.length : nextIndex;
+
+      const lowerNeighborId = getLowerNeighborId(over.id as string, edge, destColumn)
+
       destColumn.splice(
         insertIndex,
         0,
         {
           ...activeTask,
           status: newColumn,
-          position: computeNewPosition(destColumn, insertIndex)
+          position: prop.computeDropPosition(newColumn, lowerNeighborId, activeTask.id)
         }
       );
 
       return { ...prev, [prevColumn]: sourceColumn, [newColumn]: destColumn };
     });
-
-    setSelectedTaskId(null);
   };
 
   const handleAddTask = () => {
@@ -124,6 +181,7 @@ export default function Board(prop: BoardProps) {
         [task.status]: [...prev[task.status], task]
       };
     });
+    prop.addTask(task);
   }
 
   function editTask(task: Task) {
@@ -137,6 +195,8 @@ export default function Board(prop: BoardProps) {
         [task.status]: currentColumn
       };
     });
+
+    prop.updateTask(task);
   }
 
   const handleConfirm = (task: { taskId: string, title: string; description: string; dueDate: string; label: string; priority: Priority }) => {
@@ -179,6 +239,8 @@ export default function Board(prop: BoardProps) {
         [task.status]: currentColumn
       };
     });
+
+    prop.removeTask(task.id);
   }
 
   const handleDelete = (task: Task) => {
