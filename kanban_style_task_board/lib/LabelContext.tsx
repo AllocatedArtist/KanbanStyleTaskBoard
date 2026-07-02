@@ -1,5 +1,5 @@
 import { createContext, useState, ReactNode, useContext } from 'react'
-import { Label, LabelContextValue } from '@/lib/types'
+import { Label, LabelContextValue, Task } from '@/lib/types'
 
 const LabelContext = createContext<LabelContextValue | null>(null)
 
@@ -16,6 +16,11 @@ export function LabelProvider({ userId, children }: { userId: string; children: 
     return labelPool.filter(l => ids.includes(l.id))
   }
 
+  function tasksForLabel(tasks: Task[], labelId: string) {
+    const ids = taskLabels.filter(tl => tl.labelId === labelId).map(tl => tl.taskId)
+    return tasks.filter(t => ids.includes(t.id));
+  }
+
   function attachLabel(taskId: string, labelId: string) {
     setTaskLabels(prev => [...prev, { taskId, labelId }])
   }
@@ -24,10 +29,9 @@ export function LabelProvider({ userId, children }: { userId: string; children: 
     setTaskLabels(prev => prev.filter(tl => !(tl.taskId === taskId && tl.labelId === labelId)))
   }
 
-  function createLabel(name: string, color: string, taskId: string) {
-    const newLabel: Label = { id: crypto.randomUUID(), name, color, userId }
+  function createLabel(id: string, name: string, color: string) {
+    const newLabel: Label = { id, name, color, userId }
     setLabelPool(prev => [...prev, newLabel])
-    attachLabel(taskId, newLabel.id)
   }
 
   function updateLabel(labelId: string, name: string, color: string) {
@@ -46,7 +50,7 @@ export function LabelProvider({ userId, children }: { userId: string; children: 
   }
 
   return (
-    <LabelContext.Provider value={{ labelPool, labelsForTask, attachLabel, detachLabel, createLabel, updateLabel, deleteLabel }}>
+    <LabelContext.Provider value={{ labelPool, labelsForTask, attachLabel, detachLabel, createLabel, updateLabel, deleteLabel, tasksForLabel }}>
       {children}
     </LabelContext.Provider>
   )
