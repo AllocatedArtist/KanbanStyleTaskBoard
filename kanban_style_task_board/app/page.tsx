@@ -1,15 +1,19 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase/client'
-import { Task } from '@/lib/types'
-import { LabelProvider } from '@/lib/LabelContext'
 
 import dynamic from 'next/dynamic'
 const Board = dynamic(() => import('@/components/Board'), { ssr: false })
 
+import FilterBar from "@/components/FilterBar"
+import { Task } from '@/lib/types'
+import { LabelProvider } from '@/lib/LabelContext'
+
 export default function Page() {
   const [signedIn, setSignedIn] = useState(false);
-
+  const [allTasks, setAllTasks] = useState<Task[]>([]);
+  const [searchedTasks, setSearchedTasks] = useState<Task[]>([]);
+  const [filteredTasks, setFilteredTasks] = useState<Task[]>([]);
   const [userId, setUserId] = useState<string>("");
 
   async function init() {
@@ -33,10 +37,6 @@ export default function Page() {
       console.error(err.message);
     }
   }
-
-  useEffect(() => {
-    init();
-  }, []);
 
   let defaultTask: Task = {
     id: "blah",
@@ -77,11 +77,81 @@ export default function Page() {
     assigneeId: ""
   };
 
+  useEffect(() => {
+    init();
+    setAllTasks([defaultTask, defaultTask2, defaultTask3]);
+    setFilteredTasks([defaultTask, defaultTask2, defaultTask3]);
+    setSearchedTasks([defaultTask, defaultTask2, defaultTask3]);
+  }, []);
+
   return (
-    <>
+    <div>
       <LabelProvider userId={userId}>
-        <Board tasks={[defaultTask, defaultTask2, defaultTask3]} userId={userId} onTaskUpdate={() => { }} />
-      </LabelProvider>
-    </>
+        <FilterBar
+          allTasks={searchedTasks}
+          onSearch={(queries) => {
+            if (queries.length == 0) {
+              setSearchedTasks(allTasks);
+              setFilteredTasks(allTasks);
+              return;
+            }
+
+            let filteredTasks = allTasks
+              .filter(task =>
+                queries.some(
+                  query => task.title.toLowerCase().includes(query.toLowerCase())
+                )
+              );
+
+            setSearchedTasks(filteredTasks);
+            setFilteredTasks(filteredTasks);
+          }}
+          onToggleLabel={tasks => {
+            setFilteredTasks([...tasks]);
+          }}
+        />
+        <Board
+          tasks={filteredTasks}
+          userId={userId}
+          addTask={(task: Task) => {
+            setAllTasks(prev => [...prev, task]);
+          }}
+          updateTask={(task: Task) => {
+            const update = (prev: Task[]) => {
+              let allTaskCopy = [...prev];
+              let taskIndex = allTaskCopy.findIndex(t => t.id == task.id);
+              if (taskIndex == -1) return allTaskCopy;
+              allTaskCopy[taskIndex] = task;
+              return allTaskCopy;
+            }
+            setAllTasks(prev => update(prev));
+            setSearchedTasks(prev => update(prev));
+            setFilteredTasks(prev => update(prev));
+          }}
+          removeTask={(taskId: string) => {
+            setAllTasks(prev => prev.filter(task => task.id !== taskId));
+            setSearchedTasks(prev => prev.filter(task => task.id !== taskId));
+            setFilteredTasks(prev => prev.filter(task => task.id !== taskId));
+          }}
+          computeDropPosition={(status, overId, dragId) => {
+            const others = allTasks
+              .filter(t => t.id !== dragId && t.status == status)
+              .sort((a, b) => a.position - b.position)
+
+            const lowerIndex = overId
+              ? others.findIndex(t => t.id === overId)
+              : -1
+
+            const prev = lowerIndex >= 0 ? others[lowerIndex] : null
+            const next = lowerIndex >= 0 ? others[lowerIndex + 1] : others[0]   // true next in full order — may be hidden
+
+            if (!prev && !next) return 1000
+            if (!prev) return next.position / 2
+            if (!next) return prev.position + 1000
+            return (prev.position + next.position) / 2
+          }}
+        />
+      </LabelProvider >
+    </div>
   );
 }
