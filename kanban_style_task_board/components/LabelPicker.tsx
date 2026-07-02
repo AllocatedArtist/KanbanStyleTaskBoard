@@ -177,7 +177,7 @@ export default function LabelPicker(props: LabelPickerProps) {
           {/* Create new label */}
           <div className="border-t border-[#555673] px-2 py-2">
             {creating ? (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 overflow-hidden">
                 {/* Color picker for new label */}
                 <label className="relative cursor-pointer shrink-0">
                   <input
@@ -203,7 +203,7 @@ export default function LabelPicker(props: LabelPickerProps) {
                       setNewLabelName('')
                     }
                   }}
-                  className="flex-1 bg-transparent text-xs text-[#AD9BBF] border-b border-[#555673] focus:border-[#A6445E] outline-none px-1 py-0.5 placeholder-[#555673]"
+                  className="flex-1 min-w-0 bg-transparent text-xs text-[#AD9BBF] border-b border-[#555673] focus:border-[#A6445E] outline-none px-1 py-0.5 placeholder-[#555673]"
                 />
                 <button
                   onClick={handleCreate}
