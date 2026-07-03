@@ -27,9 +27,12 @@ export default function TaskModal({ isOpen, mode, onCancel, onConfirm, editingTa
 
   const labelContext = useLabels();
 
-  // Populate fields when editing
   useEffect(() => {
     setPendingLabels([...labelContext.labelPool]);
+  }, [isOpen, labelContext]);
+
+  // Populate fields when editing
+  useEffect(() => {
     if (editingTask) {
       setAssignedLabels(
         labelContext
@@ -70,19 +73,26 @@ export default function TaskModal({ isOpen, mode, onCancel, onConfirm, editingTa
       pendingLabels.findIndex(value => { return value.id == label.id }) == -1)
       .forEach(label => { labelContext.deleteLabel(label.id); });
 
-    pendingLabels.forEach(label => {
-      if (label.userId == "") {
-        labelContext.createLabel(label.id, label.name, label.color);
-      } else {
-        labelContext.updateLabel(label.id, label.name, label.color);
+    async function createAndAttach() {
+      for (let label of pendingLabels) {
+        if (label.userId == "") {
+          await labelContext.createLabel(label.id, label.name, label.color);
+        } else {
+          labelContext.updateLabel(label.id, label.name, label.color);
+        }
+      };
+
+      setPendingLabels([]);
+
+      let newLabelPairs = assignedLabels.filter(pair =>
+        !labelContext.labelsForTask(pair.taskId).find(label => label.id == pair.labelId)
+      );
+      for (let pair of newLabelPairs) {
+        await labelContext.attachLabel(newTaskId, pair.labelId);
       }
-    });
+    }
 
-    setPendingLabels([]);
-
-    assignedLabels.forEach(pair => {
-      labelContext.attachLabel(newTaskId, pair.labelId);
-    });
+    createAndAttach();
 
     if (isEditing) {
       labelContext.labelsForTask(newTaskId).filter(label =>

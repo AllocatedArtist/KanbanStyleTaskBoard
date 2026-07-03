@@ -29,9 +29,9 @@ export interface LabelContextValue {
   labelPool: Label[]
   labelsForTask: (taskId: string) => Label[]
   tasksForLabel: (tasks: Task[], labelId: string) => Task[]
-  attachLabel: (taskId: string, labelId: string) => void
+  attachLabel: (taskId: string, labelId: string) => Promise<boolean>
   detachLabel: (taskId: string, labelId: string) => void
-  createLabel: (id: string, name: string, color: string) => void
+  createLabel: (id: string, name: string, color: string) => Promise<boolean>
   updateLabel: (labelId: string, name: string, color: string) => void
   deleteLabel: (labelId: string) => void
 }

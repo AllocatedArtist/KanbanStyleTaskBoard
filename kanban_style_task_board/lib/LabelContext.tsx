@@ -1,5 +1,6 @@
-import { createContext, useState, ReactNode, useContext } from 'react'
+import { createContext, useState, ReactNode, useContext, useEffect } from 'react'
 import { Label, LabelContextValue, Task } from '@/lib/types'
+import { supabase } from '@/lib/supabase/client'
 
 const LabelContext = createContext<LabelContextValue | null>(null)
 
@@ -11,6 +12,49 @@ export function LabelProvider({ userId, children }: { userId: string; children: 
   // Array of id pairs connecting labels to tasks
   const [taskLabels, setTaskLabels] = useState<{ taskId: string; labelId: string }[]>([])
 
+  useEffect(() => {
+    async function loadLabels() {
+      const { data, error } = await supabase.from('labels').select('*')
+
+      if (error) {
+        console.error(error.message);
+        return;
+      }
+
+      let labels = data.map<Label>(label => {
+        return {
+          id: label.id,
+          userId: label.user_id,
+          name: label.name,
+          color: label.color
+        };
+      });
+
+      setLabelPool(labels);
+    }
+
+    async function loadTaskLabels() {
+      const { data, error } = await supabase.from('task_labels').select('*')
+
+      if (error) {
+        console.error(error.message);
+        return;
+      }
+
+      let taskLabelData = data.map<{ taskId: string; labelId: string }>(taskLabel => {
+        return {
+          taskId: taskLabel.task_id,
+          labelId: taskLabel.label_id
+        };
+      });
+
+      setTaskLabels(taskLabelData);
+    }
+
+    loadLabels();
+    loadTaskLabels();
+  }, []);
+
   function labelsForTask(taskId: string) {
     const ids = taskLabels.filter(tl => tl.taskId === taskId).map(tl => tl.labelId)
     return labelPool.filter(l => ids.includes(l.id))
@@ -21,17 +65,46 @@ export function LabelProvider({ userId, children }: { userId: string; children: 
     return tasks.filter(t => ids.includes(t.id));
   }
 
-  function attachLabel(taskId: string, labelId: string) {
+  async function attachLabel(taskId: string, labelId: string) {
     setTaskLabels(prev => [...prev, { taskId, labelId }])
+    const { error } = await supabase
+      .from('task_labels')
+      .insert({ task_id: taskId, label_id: labelId })
+      .select()
+      .single()
+    if (error) {
+      console.error(error.message);
+      return false
+    }
+    return true
   }
 
   function detachLabel(taskId: string, labelId: string) {
     setTaskLabels(prev => prev.filter(tl => !(tl.taskId === taskId && tl.labelId === labelId)))
+    async function detachLabelEntry() {
+      const { error } = await supabase
+        .from('task_labels')
+        .delete()
+        .eq('task_id', taskId)
+        .eq('label_id', labelId)
+      if (error) console.error(error.message);
+    }
+    detachLabelEntry();
   }
 
-  function createLabel(id: string, name: string, color: string) {
+  async function createLabel(id: string, name: string, color: string) {
     const newLabel: Label = { id, name, color, userId }
     setLabelPool(prev => [...prev, newLabel])
+    const { error } = await supabase
+      .from('labels')
+      .insert({ id: id, user_id: userId, name: name, color: color })
+      .select()
+      .single()
+    if (error) {
+      console.error(error.message);
+      return false
+    }
+    return true
   }
 
   function updateLabel(labelId: string, name: string, color: string) {
@@ -42,11 +115,24 @@ export function LabelProvider({ userId, children }: { userId: string; children: 
     setLabelPool(prev => {
       return prev.map(label => label.id == labelId ? { ...label, name, color } : label);
     });
+    async function updateLabelEntry() {
+      const { error } = await supabase
+        .from('labels')
+        .update({ name: name, color: color })
+        .eq('id', labelId)
+      if (error) console.error(error.message);
+    }
+    updateLabelEntry();
   }
 
   function deleteLabel(labelId: string) {
     setTaskLabels(prev => prev.filter(tl => tl.labelId !== labelId))
     setLabelPool(prev => prev.filter(label => label.id !== labelId))
+    async function deleteLabelEntry() {
+      const { error } = await supabase.from('labels').delete().eq('id', labelId)
+      if (error) console.error(error.message);
+    }
+    deleteLabelEntry();
   }
 
   return (
