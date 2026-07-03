@@ -29,8 +29,8 @@ A guest-friendly kanban board for managing tasks visually. No sign-up required â
 
 1. Clone the repo and install dependencies:
    ```bash
-   git clone <your-repo-url>
-   cd <project-folder>
+   git clone https://github.com/AllocatedArtist/KanbanStyleTaskBoard.git
+   cd KanbanStyleTaskBoard/kanban_style_task_board
    npm install
    ```
 
